@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading…</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #24292f;
+      background: #fff;
+    }
+    #toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: #0078d4;
+      color: white;
+      font-size: 13px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    #toolbar a {
+      color: #cfe8ff;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    #toolbar a:hover { text-decoration: underline; }
+    #filepath { font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    #status {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 16px 24px;
+      border-radius: 6px;
+      background: #fff3cd;
+      color: #856404;
+      font-size: 13px;
+    }
+    #status.error { background: #f8d7da; color: #721c24; }
+
+    /* GitHub-ish Markdown styles */
+    #content h1,#content h2,#content h3,#content h4,#content h5,#content h6 {
+      margin-top: 1.4em; margin-bottom: .4em; font-weight: 600; line-height: 1.3;
+    }
+    #content h1 { font-size: 2em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+    #content h2 { font-size: 1.5em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+    #content p { margin: .8em 0; }
+    #content a { color: #0969da; }
+    #content code {
+      background: #f6f8fa; border: 1px solid #d0d7de;
+      border-radius: 3px; padding: .1em .4em; font-size: .9em; font-family: 'SF Mono', Consolas, monospace;
+    }
+    #content pre {
+      background: #f6f8fa; border: 1px solid #d0d7de;
+      border-radius: 6px; padding: 14px 16px; overflow-x: auto;
+    }
+    #content pre code { background: none; border: none; padding: 0; font-size: .875em; }
+    #content blockquote {
+      margin: .8em 0; padding: 0 1em;
+      color: #57606a; border-left: 4px solid #d0d7de;
+    }
+    #content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    #content th, #content td {
+      border: 1px solid #d0d7de; padding: 6px 13px;
+    }
+    #content th { background: #f6f8fa; font-weight: 600; }
+    #content tr:nth-child(even) td { background: #f6f8fa; }
+    #content img { max-width: 100%; }
+    #content ul, #content ol { padding-left: 2em; margin: .8em 0; }
+    #content li { margin: .3em 0; }
+    #content hr { border: none; border-top: 1px solid #d0d7de; margin: 1.5em 0; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <span id="filepath">Loading…</span>
+    <a id="sourceLink" href="#" target="_blank">View source ↗</a>
+  </div>
+  <div id="status">Fetching file…</div>
+  <div id="content" style="display:none"></div>
+
+  <script src="lib/marked.min.js"></script>
+  <script src="azure-fetch.js"></script>
+  <script src="render-md.js"></script>
+</body>
+</html>
