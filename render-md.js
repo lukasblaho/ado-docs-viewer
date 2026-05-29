@@ -2,6 +2,7 @@
   const params = new URLSearchParams(location.search);
   const filePath = params.get('path');
   const prId = params.get('prId');
+  const branch = params.get('branch');
 
   const statusEl = document.getElementById('status');
   const contentEl = document.getElementById('content');
@@ -11,8 +12,10 @@
   const org = params.get('org');
   const project = params.get('project');
   const repo = params.get('repo');
-  const sourceUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_git/${encodeURIComponent(repo)}?path=${encodeURIComponent(filePath)}`;
-  filepathEl.textContent = (prId ? `PR #${prId} — ` : '') + filePath;
+  const branchParam = branch ? `&version=GB${encodeURIComponent(branch)}` : '';
+  const sourceUrl = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_git/${encodeURIComponent(repo)}?path=${encodeURIComponent(filePath)}${branchParam}`;
+  const label = prId ? `PR #${prId}` : branch ? `Branch: ${branch}` : null;
+  filepathEl.textContent = (label ? `${label} — ` : '') + filePath;
   document.title = filePath.split('/').pop();
   sourceLinkEl.href = sourceUrl;
 
@@ -34,7 +37,7 @@
   contentEl.style.display = '';
   contentEl.innerHTML = marked.parse(markdown);
 
-  rewriteLinks(contentEl, org, project, repo, filePath, prId);
+  rewriteLinks(contentEl, org, project, repo, filePath, prId, branch);
 })();
 
 // Resolve a relative href against the current file's directory in the repo.
@@ -51,7 +54,7 @@ function resolveRepoPath(currentFilePath, href) {
   return resolved.join('/');
 }
 
-function rewriteLinks(container, org, project, repo, filePath, prId) {
+function rewriteLinks(container, org, project, repo, filePath, prId, branch) {
   const RENDER_EXTS = new Set(['md', 'puml', 'plantuml']);
 
   container.querySelectorAll('a[href]').forEach(link => {
@@ -70,6 +73,7 @@ function rewriteLinks(container, org, project, repo, filePath, prId) {
     const ext = resolvedPath.split('.').pop().toLowerCase();
 
     const prParam = prId ? `&prId=${encodeURIComponent(prId)}` : '';
+    const branchParam = (!prId && branch) ? `&branch=${encodeURIComponent(branch)}` : '';
 
     if (RENDER_EXTS.has(ext)) {
       // Link to another renderable file → open in same tab (back button works)
@@ -77,14 +81,15 @@ function rewriteLinks(container, org, project, repo, filePath, prId) {
       link.href =
         chrome.runtime.getURL(renderPage) +
         `?org=${encodeURIComponent(org)}&project=${encodeURIComponent(project)}` +
-        `&repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(resolvedPath)}${prParam}` +
+        `&repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(resolvedPath)}${prParam}${branchParam}` +
         fragment;
       link.target = '_self';
     } else {
       // Any other relative link → point to Azure DevOps file view in same tab
+      const adoBranchParam = (!prId && branch) ? `&version=GB${encodeURIComponent(branch)}` : '';
       link.href =
         `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}` +
-        `/_git/${encodeURIComponent(repo)}?path=${encodeURIComponent(resolvedPath)}` +
+        `/_git/${encodeURIComponent(repo)}?path=${encodeURIComponent(resolvedPath)}${adoBranchParam}` +
         fragment;
       link.target = '_self';
     }

@@ -49,6 +49,14 @@ async function handleFileView() {
     renderUrl += `&prId=${encodeURIComponent(prId)}`;
   }
 
+  // Azure DevOps encodes the branch as "GB<branchname>" in the `version` param
+  // e.g. version=GBfeature/my-branch
+  const versionParam = urlParams.get('version');
+  if (!prId && versionParam && versionParam.startsWith('GB')) {
+    const branch = versionParam.slice(2); // strip "GB" prefix
+    renderUrl += `&branch=${encodeURIComponent(branch)}`;
+  }
+
   try {
     chrome.runtime.sendMessage({ action: 'openTab', url: renderUrl });
   } catch {

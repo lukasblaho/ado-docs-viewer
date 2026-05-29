@@ -8,11 +8,12 @@ async function fetchAzureFile(params, pat) {
   const repo = params.get('repo');
   const filePath = params.get('path');
   const prId = params.get('prId');
+  const branch = params.get('branch'); // explicit branch from URL version param
 
   const headers = pat ? { 'Authorization': 'Basic ' + btoa(':' + pat) } : {};
   const base = `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}`;
 
-  // Resolve source branch when viewing a PR
+  // Resolve source branch: PR takes priority, then explicit branch param
   let versionParam = '';
   if (prId) {
     const prApiUrl = `${base}/_apis/git/pullrequests/${prId}?api-version=7.1`;
@@ -26,6 +27,8 @@ async function fetchAzureFile(params, pat) {
     if (refName) {
       versionParam = `&versionDescriptor.version=${encodeURIComponent(refName)}&versionDescriptor.versionType=branch`;
     }
+  } else if (branch) {
+    versionParam = `&versionDescriptor.version=${encodeURIComponent(branch)}&versionDescriptor.versionType=branch`;
   }
 
   const apiUrl =
