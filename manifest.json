@@ -25,7 +25,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["render-md.html", "render-puml.html", "lib/marked.min.js", "lib/pako.min.js", "azure-fetch.js"],
+      "resources": ["render-md.html", "render-puml.html", "render-openapi.html", "lib/marked.min.js", "lib/pako.min.js", "lib/js-yaml.min.js", "lib/swagger-ui-bundle.js", "lib/swagger-ui.css", "lib/swagger-ui-theme-flattop.css", "azure-fetch.js"],
       "matches": ["<all_urls>"]
     }
   ],

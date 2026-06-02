@@ -55,7 +55,7 @@ function resolveRepoPath(currentFilePath, href) {
 }
 
 function rewriteLinks(container, org, project, repo, filePath, prId, branch) {
-  const RENDER_EXTS = new Set(['md', 'puml', 'plantuml']);
+  const RENDER_EXTS = new Set(['md', 'puml', 'plantuml', 'yaml', 'yml', 'json']);
 
   container.querySelectorAll('a[href]').forEach(link => {
     const href = link.getAttribute('href');
@@ -77,7 +77,9 @@ function rewriteLinks(container, org, project, repo, filePath, prId, branch) {
 
     if (RENDER_EXTS.has(ext)) {
       // Link to another renderable file → open in same tab (back button works)
-      const renderPage = ext === 'md' ? 'render-md.html' : 'render-puml.html';
+      const renderPage = ext === 'md' ? 'render-md.html'
+        : (ext === 'puml' || ext === 'plantuml') ? 'render-puml.html'
+        : 'render-openapi.html';
       link.href =
         chrome.runtime.getURL(renderPage) +
         `?org=${encodeURIComponent(org)}&project=${encodeURIComponent(project)}` +

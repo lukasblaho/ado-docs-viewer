@@ -13,7 +13,8 @@ async function handleFileView() {
   if (!filePath) return;
 
   const ext = filePath.split('.').pop().toLowerCase();
-  if (ext !== 'md' && ext !== 'puml' && ext !== 'plantuml') return;
+  if (ext !== 'md' && ext !== 'puml' && ext !== 'plantuml' &&
+      ext !== 'yaml' && ext !== 'yml' && ext !== 'json') return;
 
   // Guard against invalidated extension context (e.g. after extension reload)
   try {
@@ -39,7 +40,9 @@ async function handleFileView() {
   const repo = decodeURIComponent(match[3]);
   const prId = match[4] || null; // present only on PR pages
 
-  const renderPage = ext === 'md' ? 'render-md.html' : 'render-puml.html';
+  const renderPage = ext === 'md' ? 'render-md.html'
+    : (ext === 'puml' || ext === 'plantuml') ? 'render-puml.html'
+    : 'render-openapi.html';
   let renderUrl =
     chrome.runtime.getURL(renderPage) +
     `?org=${encodeURIComponent(org)}&project=${encodeURIComponent(project)}` +

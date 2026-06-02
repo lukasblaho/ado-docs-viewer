@@ -1,11 +1,12 @@
 # Azure DevOps Docs Viewer
 
-A Chrome extension that renders **Markdown** and **PlantUML** files directly in the browser when viewing them in Azure DevOps (dev.azure.com).
+A Chrome extension that renders **Markdown**, **PlantUML**, and **OpenAPI** files directly in the browser when viewing them in Azure DevOps (dev.azure.com).
 
 ## Features
 
 - 📄 Renders `.md` files with GitHub-style formatting
 - 📊 Renders `.puml` / `.plantuml` diagrams via [plantuml.com](https://plantuml.com)
+- 📑 Renders `.yaml` / `.yml` / `.json` OpenAPI (Swagger) specs with [Swagger UI](https://swagger.io/tools/swagger-ui/)
 - 🔗 Relative links in Markdown work and the back button navigates history
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
 - 🔀 Works on regular file views **and** Pull Request file views
@@ -49,9 +50,11 @@ To create a PAT in Azure DevOps:
 
 ## Usage
 
-1. Browse to any `.md` or `.puml` file in Azure DevOps
+1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, or `.json` file in Azure DevOps
 2. A new tab opens automatically with the rendered content
 3. Use the toggle in the popup to disable auto-render if needed
+
+OpenAPI files (`.yaml`, `.yml`, `.json`) are rendered with Swagger UI. If a file cannot be recognised as a valid OpenAPI/Swagger spec a warning is shown but rendering is still attempted.
 
 ## Keeping it up to date
 
@@ -67,3 +70,5 @@ Then go to `chrome://extensions` and click the **refresh icon** on the extension
 ## Privacy note
 
 PlantUML diagram source is sent to the public [plantuml.com](https://plantuml.com) server for rendering. If your diagrams contain sensitive information, consider running a [local PlantUML server](https://plantuml.com/starting) instead.
+
+OpenAPI specs are rendered entirely **locally** using the bundled Swagger UI library — no data is sent to any external server.
