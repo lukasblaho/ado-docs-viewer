@@ -40,6 +40,60 @@
   rewriteLinks(contentEl, org, project, repo, filePath, prId, branch);
 })();
 
+// Finds all ```plantuml / ```puml code blocks and replaces them with plantuml.com SVG images.
+function renderPlantUMLBlocks(container) {
+  const blocks = container.querySelectorAll(
+    'pre > code.language-plantuml, pre > code.language-puml'
+  );
+  for (const codeEl of blocks) {
+    const source = codeEl.textContent;
+    const preEl = codeEl.parentElement;
+    let encoded;
+    try {
+      encoded = encodePlantUml(source);
+    } catch {
+      continue; // leave code block intact on encode failure
+    }
+    const img = document.createElement('img');
+    img.src = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+    img.alt = 'PlantUML diagram';
+    img.onerror = () => {
+      img.style.display = 'none';
+      const err = document.createElement('p');
+      err.style.cssText = 'color:#721c24;background:#f8d7da;padding:8px 12px;border-radius:4px;font-size:13px;';
+      err.textContent = '⚠️ Failed to render PlantUML diagram. Check that the source is valid.';
+      wrapper.appendChild(err);
+    };
+    const wrapper = document.createElement('div');
+    wrapper.className = 'plantuml-diagram';
+    wrapper.appendChild(img);
+    preEl.replaceWith(wrapper);
+  }
+}
+
+// PlantUML encoding: deflate (pako) + custom base64.
+// See: https://plantuml.com/text-encoding
+function encodePlantUml(source) {
+  const CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
+  const encode6bit = b => CHARS[b & 0x3F];
+  function append3bytes(b1, b2, b3) {
+    return encode6bit(b1 >> 2) +
+      encode6bit(((b1 & 0x3) << 4) | (b2 >> 4)) +
+      encode6bit(((b2 & 0xF) << 2) | (b3 >> 6)) +
+      encode6bit(b3 & 0x3F);
+  }
+  const compressed = pako.deflateRaw(new TextEncoder().encode(source), { level: 9 });
+  let result = '';
+  for (let i = 0; i < compressed.length; i += 3) {
+    result += append3bytes(
+      compressed[i],
+      i + 1 < compressed.length ? compressed[i + 1] : 0,
+      i + 2 < compressed.length ? compressed[i + 2] : 0
+    );
+  }
+  return result;
+}
+
 // Resolve a relative href against the current file's directory in the repo.
 function resolveRepoPath(currentFilePath, href) {
   if (href.startsWith('/')) return href; // already absolute within repo

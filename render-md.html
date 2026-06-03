@@ -81,6 +81,8 @@
     #content ul, #content ol { padding-left: 2em; margin: .8em 0; }
     #content li { margin: .3em 0; }
     #content hr { border: none; border-top: 1px solid #d0d7de; margin: 1.5em 0; }
+    .plantuml-diagram { margin: 1em 0; overflow-x: auto; }
+    .plantuml-diagram img { max-width: 100%; display: block; }
   </style>
 </head>
 <body>
@@ -92,6 +94,7 @@
   <div id="content" style="display:none"></div>
 
   <script src="lib/marked.min.js"></script>
+  <script src="lib/pako.min.js"></script>
   <script src="azure-fetch.js"></script>
   <script src="render-md.js"></script>
 </body>
