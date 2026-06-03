@@ -38,7 +38,33 @@
   contentEl.innerHTML = marked.parse(markdown);
 
   rewriteLinks(contentEl, org, project, repo, filePath, prId, branch);
+  await renderMermaidBlocks(contentEl);
+  renderPlantUMLBlocks(contentEl);
 })();
+
+// Finds all ```mermaid code blocks in the rendered HTML and replaces them with SVG.
+async function renderMermaidBlocks(container) {
+  const blocks = container.querySelectorAll('pre > code.language-mermaid');
+  if (!blocks.length) return;
+
+  mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+  let idx = 0;
+  for (const codeEl of blocks) {
+    const source = codeEl.textContent;
+    const preEl = codeEl.parentElement;
+    const id = `mermaid-block-${idx++}`;
+    try {
+      const { svg } = await mermaid.render(id, source);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mermaid-diagram';
+      wrapper.innerHTML = svg;
+      preEl.replaceWith(wrapper);
+    } catch {
+      // Leave the original code block intact on render failure
+    }
+  }
+}
 
 // Finds all ```plantuml / ```puml code blocks and replaces them with plantuml.com SVG images.
 function renderPlantUMLBlocks(container) {
@@ -109,7 +135,7 @@ function resolveRepoPath(currentFilePath, href) {
 }
 
 function rewriteLinks(container, org, project, repo, filePath, prId, branch) {
-  const RENDER_EXTS = new Set(['md', 'puml', 'plantuml', 'yaml', 'yml', 'json']);
+  const RENDER_EXTS = new Set(['md', 'puml', 'plantuml', 'yaml', 'yml', 'json', 'mmd', 'mermaid']);
 
   container.querySelectorAll('a[href]').forEach(link => {
     const href = link.getAttribute('href');
@@ -133,6 +159,7 @@ function rewriteLinks(container, org, project, repo, filePath, prId, branch) {
       // Link to another renderable file → open in same tab (back button works)
       const renderPage = ext === 'md' ? 'render-md.html'
         : (ext === 'puml' || ext === 'plantuml') ? 'render-puml.html'
+        : (ext === 'mmd' || ext === 'mermaid') ? 'render-mermaid.html'
         : 'render-openapi.html';
       link.href =
         chrome.runtime.getURL(renderPage) +

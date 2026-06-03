@@ -14,7 +14,8 @@ async function handleFileView() {
 
   const ext = filePath.split('.').pop().toLowerCase();
   if (ext !== 'md' && ext !== 'puml' && ext !== 'plantuml' &&
-      ext !== 'yaml' && ext !== 'yml' && ext !== 'json') return;
+      ext !== 'yaml' && ext !== 'yml' && ext !== 'json' &&
+      ext !== 'mmd' && ext !== 'mermaid') return;
 
   // Guard against invalidated extension context (e.g. after extension reload)
   try {
@@ -42,6 +43,7 @@ async function handleFileView() {
 
   const renderPage = ext === 'md' ? 'render-md.html'
     : (ext === 'puml' || ext === 'plantuml') ? 'render-puml.html'
+    : (ext === 'mmd' || ext === 'mermaid') ? 'render-mermaid.html'
     : 'render-openapi.html';
   let renderUrl =
     chrome.runtime.getURL(renderPage) +

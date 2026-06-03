@@ -6,6 +6,7 @@ A Chrome extension that renders **Markdown**, **PlantUML**, and **OpenAPI** file
 
 - 📄 Renders `.md` files with GitHub-style formatting
 - 📊 Renders `.puml` / `.plantuml` diagrams via [plantuml.com](https://plantuml.com)
+- 🧜 Renders `.mmd` / `.mermaid` files and ` ```mermaid ` code blocks in Markdown with [Mermaid](https://mermaid.js.org/) (locally, no external server)
 - 📑 Renders `.yaml` / `.yml` / `.json` OpenAPI (Swagger) specs with [Swagger UI](https://swagger.io/tools/swagger-ui/)
 - 🔗 Relative links in Markdown work and the back button navigates history
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
@@ -50,11 +51,13 @@ To create a PAT in Azure DevOps:
 
 ## Usage
 
-1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, or `.json` file in Azure DevOps
+1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, `.json`, or `.mmd`/`.mermaid` file in Azure DevOps
 2. A new tab opens automatically with the rendered content
 3. Use the toggle in the popup to disable auto-render if needed
 
 OpenAPI files (`.yaml`, `.yml`, `.json`) are rendered with Swagger UI. If a file cannot be recognised as a valid OpenAPI/Swagger spec a warning is shown but rendering is still attempted.
+
+Mermaid diagrams in `.mmd`/`.mermaid` files are rendered with zoom controls. Mermaid ` ```mermaid ` fenced code blocks inside `.md` files are also rendered inline.
 
 ## Keeping it up to date
 
@@ -72,3 +75,5 @@ Then go to `chrome://extensions` and click the **refresh icon** on the extension
 PlantUML diagram source is sent to the public [plantuml.com](https://plantuml.com) server for rendering. If your diagrams contain sensitive information, consider running a [local PlantUML server](https://plantuml.com/starting) instead.
 
 OpenAPI specs are rendered entirely **locally** using the bundled Swagger UI library — no data is sent to any external server.
+
+Mermaid diagrams are also rendered entirely **locally** using the bundled Mermaid library.
