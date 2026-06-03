@@ -72,12 +72,27 @@ async function handleFileView() {
 // Initial check on page load
 handleFileView();
 
-// Watch for Azure DevOps SPA navigation (URL changes without full reload)
-let previousUrl = location.href;
+// Debounced trigger: Azure DevOps SPA sometimes sets the URL in two steps —
+// first ?path=... then adds &version=GBbranch via replaceState.  A small delay
+// ensures we always read the fully-settled URL.
+let debounceTimer = null;
+function scheduleHandleFileView() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(handleFileView, 300);
+}
+
+// Patch history API to catch pushState / replaceState URL changes directly,
+// which is more reliable than waiting for DOM mutations.
+const _pushState = history.pushState.bind(history);
+const _replaceState = history.replaceState.bind(history);
+history.pushState = function (...args) { _pushState(...args); scheduleHandleFileView(); };
+history.replaceState = function (...args) { _replaceState(...args); scheduleHandleFileView(); };
+
+// MutationObserver as a fallback for navigations that bypass history API.
 const navObserver = new MutationObserver(() => {
-  if (location.href !== previousUrl) {
-    previousUrl = location.href;
-    handleFileView();
+  if (location.href !== (navObserver._lastUrl ?? '')) {
+    navObserver._lastUrl = location.href;
+    scheduleHandleFileView();
   }
 });
 navObserver.observe(document.documentElement, { subtree: true, childList: true });
