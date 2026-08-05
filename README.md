@@ -12,7 +12,8 @@ A Chrome extension that renders **Markdown**, **PlantUML**, and **OpenAPI** file
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
 - 🔀 Works on regular file views **and** Pull Request file views
 - 🔒 Supports private repositories via a Personal Access Token (PAT)
-- ⏸️ Toggle auto-render on/off from the extension popup
+- 🔵 Shows a small floating icon over recognized documents — click it to open the rendered view in a new tab (nothing opens automatically)
+- 🎨 The icon's color/glyph reflects the doc type (Markdown, PlantUML, Mermaid, OpenAPI), and for diagrams it shows the detected kind (Sequence, Class, Component, State, ...) when it can be determined from the file content
 
 ## Installation
 
@@ -52,8 +53,10 @@ To create a PAT in Azure DevOps:
 ## Usage
 
 1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, `.json`, or `.mmd`/`.mermaid` file in Azure DevOps
-2. A new tab opens automatically with the rendered content
-3. Use the toggle in the popup to disable auto-render if needed
+2. A small floating icon appears in the bottom-right corner of the page, colored/shaped according to the doc type, indicating the file was recognized
+3. Click the icon to open the rendered content in a new tab
+
+For Mermaid and PlantUML files, the extension briefly inspects the file content to detect the specific diagram kind (e.g. Sequence, Class, Component, State) and shows it as a small badge on the icon and in its tooltip.
 
 OpenAPI files (`.yaml`, `.yml`, `.json`) are rendered with Swagger UI. If a file cannot be recognised as a valid OpenAPI/Swagger spec a warning is shown but rendering is still attempted.
 

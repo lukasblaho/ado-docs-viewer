@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Azure DevOps Docs Viewer",
   "version": "1.0.0",
-  "description": "Renders Markdown and PlantUML files from Azure DevOps in a new tab.",
+  "description": "Shows an icon over Markdown/PlantUML/diagram files in Azure DevOps and renders them in a new tab on click.",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["https://dev.azure.com/*"],
   "content_scripts": [
