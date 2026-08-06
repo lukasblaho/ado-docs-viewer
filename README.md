@@ -1,6 +1,6 @@
 # Azure DevOps Docs Viewer
 
-A Chrome extension that renders **Markdown**, **PlantUML**, and **OpenAPI** files directly in the browser when viewing them in Azure DevOps (dev.azure.com).
+A Chrome extension that renders **Markdown**, **PlantUML**, **OpenAPI**, and **GraphQL schema** files directly in the browser when viewing them in Azure DevOps (dev.azure.com) — and, for GraphQL schemas, also on raw files served by any site.
 
 ## Features
 
@@ -8,12 +8,13 @@ A Chrome extension that renders **Markdown**, **PlantUML**, and **OpenAPI** file
 - 📊 Renders `.puml` / `.plantuml` diagrams via [plantuml.com](https://plantuml.com)
 - 🧜 Renders `.mmd` / `.mermaid` files and ` ```mermaid ` code blocks in Markdown with [Mermaid](https://mermaid.js.org/) (locally, no external server)
 - 📑 Renders `.yaml` / `.yml` / `.json` OpenAPI (Swagger) specs with [Swagger UI](https://swagger.io/tools/swagger-ui/)
+- 🕸️ Renders `.graphql` / `.gql` GraphQL SDL schema files with [GraphQL Voyager](https://github.com/APIs-guru/graphql-voyager) — an interactive, explorable graph of types and their relationships. Works both in Azure DevOps and on raw schema files served directly by any site (e.g. `https://api.example.com/graphql/schema.graphql`)
 - 🔗 Relative links in Markdown work and the back button navigates history
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
 - 🔀 Works on regular file views **and** Pull Request file views
 - 🔒 Supports private repositories via a Personal Access Token (PAT)
 - 🔵 Shows a small floating icon over recognized documents — click it to open the rendered view in a new tab (nothing opens automatically)
-- 🎨 The icon's color/glyph reflects the doc type (Markdown, PlantUML, Mermaid, OpenAPI), and for diagrams it shows the detected kind (Sequence, Class, Component, State, ...) when it can be determined from the file content
+- 🎨 The icon's color/glyph reflects the doc type (Markdown, PlantUML, Mermaid, OpenAPI, GraphQL), and for diagrams it shows the detected kind (Sequence, Class, Component, State, ...) when it can be determined from the file content
 
 ## Installation
 
@@ -52,7 +53,7 @@ To create a PAT in Azure DevOps:
 
 ## Usage
 
-1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, `.json`, or `.mmd`/`.mermaid` file in Azure DevOps
+1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, `.json`, `.mmd`/`.mermaid`, or `.graphql`/`.gql` file in Azure DevOps — or a raw `.graphql`/`.gql` schema file served by any site
 2. A small floating icon appears in the bottom-right corner of the page, colored/shaped according to the doc type, indicating the file was recognized
 3. Click the icon to open the rendered content in a new tab
 
@@ -61,6 +62,12 @@ For Mermaid and PlantUML files, the extension briefly inspects the file content 
 OpenAPI files (`.yaml`, `.yml`, `.json`) are rendered with Swagger UI. If a file cannot be recognised as a valid OpenAPI/Swagger spec a warning is shown but rendering is still attempted.
 
 Mermaid diagrams in `.mmd`/`.mermaid` files are rendered with zoom controls. Mermaid ` ```mermaid ` fenced code blocks inside `.md` files are also rendered inline.
+
+GraphQL schema files (`.graphql`/`.gql`) are rendered with [GraphQL Voyager](https://github.com/APIs-guru/graphql-voyager), showing an interactive, explorable diagram of all types and how they relate to each other. On non-Azure-DevOps sites, the extension only shows the icon after sniffing the page content for actual SDL keywords (`type`, `schema`, `interface`, `enum`, ...) — a URL merely containing "graphql" is not enough to trigger it.
+
+### How GraphQL rendering works under the hood
+
+GraphQL Voyager needs to spin up a Web Worker (for its graph-layout engine) using a `blob:` URL, which Chrome's regular extension-page CSP forbids outright. To work around this, the Voyager UI is rendered inside a Chrome **sandboxed page** (`voyager-sandbox.html`), which is allowed a more permissive CSP for exactly this use case. The outer render tab (`render-graphql.html`) fetches the raw schema text, converts it to introspection JSON using a vendored copy of `graphql-js`, and hands it off to the sandboxed iframe via `postMessage`. Everything — Voyager's UI bundle and the GraphQL parser — is vendored locally in `lib/`; no schema content or introspection data is sent to any external server.
 
 ## Keeping it up to date
 
@@ -80,3 +87,5 @@ PlantUML diagram source is sent to the public [plantuml.com](https://plantuml.co
 OpenAPI specs are rendered entirely **locally** using the bundled Swagger UI library — no data is sent to any external server.
 
 Mermaid diagrams are also rendered entirely **locally** using the bundled Mermaid library.
+
+GraphQL schema diagrams are also rendered entirely **locally** using the bundled GraphQL Voyager and `graphql-js` libraries — no schema content leaves your browser. Note that the extension requests broad host permissions (`<all_urls>`) so it can detect and fetch raw `.graphql`/`.gql` files served on any site; it only activates its icon after positively sniffing GraphQL SDL content.

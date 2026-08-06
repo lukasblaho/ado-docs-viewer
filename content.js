@@ -20,6 +20,8 @@ const KIND_STYLES = {
     '<rect x="3" y="3" width="9" height="6"/><rect x="12" y="15" width="9" height="6"/><path d="M7.5 9v3.5h9V15"/>' },
   mermaid: { color: '#0e9594', label: 'Mermaid', svg:
     '<circle cx="5" cy="12" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M7 12h3.5M11.5 11l6-4.5M11.5 13l6 4.5"/>' },
+  graphql: { color: '#e10098', label: 'GraphQL', svg:
+    '<circle cx="12" cy="4.5" r="1.8"/><circle cx="20" cy="8.5" r="1.8"/><circle cx="20" cy="16.5" r="1.8"/><circle cx="12" cy="20.5" r="1.8"/><circle cx="4" cy="16.5" r="1.8"/><circle cx="4" cy="8.5" r="1.8"/><path d="M12 6.3v12.4M6 9.7l6-3.4M6 15.3l6 3.4M18 9.7l-6-3.4M18 15.3l-6 3.4M6 9.7v5.6M18 9.7v5.6"/>' },
 };
 
 // Mermaid diagram-type keyword → friendly subtype label.
@@ -224,12 +226,25 @@ function isExtensionContextValid() {
   return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
 }
 
+// GraphQL SDL keyword sniff used on generic (non-ADO) pages to avoid false
+// positives on unrelated pages whose URL merely contains "graphql".
+function looksLikeGraphQLSDLText(text) {
+  if (!text) return false;
+  return /(^|\n)\s*(type|interface|input|enum|union|scalar|schema)\s+[\w{]/.test(text) ||
+    /(^|\n)\s*schema\s*\{/.test(text);
+}
+
 async function handleFileViewInner() {
   if (!isExtensionContextValid()) return;
 
   const url = window.location.href;
   if (url === lastUrl) return;
   lastUrl = url;
+
+  if (window.location.hostname !== 'dev.azure.com') {
+    await handleGenericGraphQLPage();
+    return;
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const filePath = urlParams.get('path');
@@ -241,7 +256,8 @@ async function handleFileViewInner() {
   const ext = filePath.split('.').pop().toLowerCase();
   if (ext !== 'md' && ext !== 'puml' && ext !== 'plantuml' &&
       ext !== 'yaml' && ext !== 'yml' && ext !== 'json' &&
-      ext !== 'mmd' && ext !== 'mermaid') {
+      ext !== 'mmd' && ext !== 'mermaid' &&
+      ext !== 'graphql' && ext !== 'gql') {
     hideIcon();
     return;
   }
@@ -266,10 +282,12 @@ async function handleFileViewInner() {
   const kind = ext === 'md' ? 'markdown'
     : (ext === 'puml' || ext === 'plantuml') ? 'plantuml'
     : (ext === 'mmd' || ext === 'mermaid') ? 'mermaid'
+    : (ext === 'graphql' || ext === 'gql') ? 'graphql'
     : 'openapi';
   const renderPage = kind === 'markdown' ? 'render-md.html'
     : kind === 'plantuml' ? 'render-puml.html'
     : kind === 'mermaid' ? 'render-mermaid.html'
+    : kind === 'graphql' ? 'render-graphql.html'
     : 'render-openapi.html';
   let renderUrl =
     chrome.runtime.getURL(renderPage) +
@@ -299,6 +317,32 @@ async function handleFileViewInner() {
     const subtype = kind === 'mermaid' ? detectMermaidSubtype(text) : detectPlantUMLSubtype(text);
     if (subtype) paintIcon(kind, subtype);
   }
+}
+
+// Detects raw GraphQL SDL files served directly by any site (outside Azure
+// DevOps), e.g. https://api.example.com/graphql/schema.graphql. Guards
+// against false positives (pages whose URL merely contains "graphql") by
+// sniffing the already-loaded page content for SDL keywords before showing
+// the icon.
+async function handleGenericGraphQLPage() {
+  const pathname = window.location.pathname.toLowerCase();
+  if (!pathname.endsWith('.graphql') && !pathname.endsWith('.gql')) {
+    hideIcon();
+    return;
+  }
+
+  // Chrome's built-in plain-text viewer wraps raw file content in a single
+  // <pre> element; fall back to the full body text for other renderings.
+  const text = document.querySelector('pre')?.innerText || document.body?.innerText || '';
+  if (!looksLikeGraphQLSDLText(text)) {
+    hideIcon();
+    return;
+  }
+
+  const renderUrl =
+    chrome.runtime.getURL('render-graphql.html') +
+    `?src=${encodeURIComponent(window.location.href)}`;
+  showIcon(renderUrl, 'graphql', null);
 }
 
 // Wrapper: swallows any error (e.g. extension context invalidated mid-flight)

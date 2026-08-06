@@ -2,16 +2,22 @@
   "manifest_version": 3,
   "name": "Azure DevOps Docs Viewer",
   "version": "1.0.0",
-  "description": "Shows an icon over Markdown/PlantUML/diagram files in Azure DevOps and renders them in a new tab on click.",
+  "description": "Shows an icon over Markdown/PlantUML/GraphQL/diagram files in Azure DevOps and raw web pages, and renders them in a new tab on click.",
   "permissions": ["storage", "tabs"],
-  "host_permissions": ["https://dev.azure.com/*"],
+  "host_permissions": ["<all_urls>"],
   "content_scripts": [
     {
-      "matches": ["https://dev.azure.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
+  "sandbox": {
+    "pages": ["voyager-sandbox.html"]
+  },
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; child-src 'self';"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -25,7 +31,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["render-md.html", "render-puml.html", "render-openapi.html", "render-mermaid.html", "lib/marked.min.js", "lib/pako.min.js", "lib/js-yaml.min.js", "lib/swagger-ui-bundle.js", "lib/swagger-ui.css", "lib/swagger-ui-theme-flattop.css", "lib/mermaid.min.js", "azure-fetch.js"],
+      "resources": ["render-md.html", "render-puml.html", "render-openapi.html", "render-mermaid.html", "render-graphql.html", "lib/marked.min.js", "lib/pako.min.js", "lib/js-yaml.min.js", "lib/swagger-ui-bundle.js", "lib/swagger-ui.css", "lib/swagger-ui-theme-flattop.css", "lib/mermaid.min.js", "azure-fetch.js"],
       "matches": ["<all_urls>"]
     }
   ],

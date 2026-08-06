@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GraphQL Voyager</title>
+  <link rel="stylesheet" href="lib/voyager.css" />
+  <style>
+    html, body { margin: 0; height: 100%; }
+    /* #voyager must have real, non-zero dimensions from first paint —
+       Voyager's pan/zoom layer computes an SVG CTM inverse at init and
+       throws "SVGMatrix ... not invertible" if the container is zero-sized
+       (e.g. still display:none) at that moment. */
+    #voyager { height: 100vh; }
+  </style>
+  <script src="lib/voyager.standalone.js"></script>
+</head>
+<body>
+  <div id="voyager">Loading…</div>
+  <script>
+    window.addEventListener('message', (event) => {
+      if (event.source !== window.parent) return;
+      if (!event.data || event.data.type !== 'render') return;
+      try {
+        GraphQLVoyager.renderVoyager(document.getElementById('voyager'), {
+          introspection: event.data.introspection,
+          displayOptions: { skipRelay: true, skipDeprecated: true },
+        });
+      } catch (err) {
+        window.parent.postMessage({ type: 'error', message: err.message }, '*');
+      }
+    });
+
+    // Signal readiness once Voyager's script has evaluated and the DOM is
+    // painted (so the parent knows it's safe to postMessage the schema).
+    window.parent.postMessage({ type: 'ready' }, '*');
+  </script>
+</body>
+</html>
