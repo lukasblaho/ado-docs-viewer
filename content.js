@@ -319,14 +319,38 @@ async function handleFileViewInner() {
   }
 }
 
+// Checks whether `hostname` is allowed to have its raw .graphql/.gql files
+// detected, based on the user-configured domain allowlist (chrome.storage.sync
+// key `graphqlAllowedDomains`, one hostname per line). Matches exact hostname
+// or subdomains (e.g. an allowlist entry of "example.com" also matches
+// "api.example.com"). An empty/unset list means "allow any site" (the
+// original broad-detection behavior).
+async function isGraphQLDomainAllowed(hostname) {
+  const { graphqlAllowedDomains = [] } = await chrome.storage.sync.get(['graphqlAllowedDomains']);
+  if (!graphqlAllowedDomains.length) return true; // no allowlist configured -> allow all
+  const host = hostname.toLowerCase();
+  return graphqlAllowedDomains.some((domain) => {
+    const d = domain.toLowerCase();
+    return host === d || host.endsWith(`.${d}`);
+  });
+}
+
 // Detects raw GraphQL SDL files served directly by any site (outside Azure
 // DevOps), e.g. https://api.example.com/graphql/schema.graphql. Guards
 // against false positives (pages whose URL merely contains "graphql") by
 // sniffing the already-loaded page content for SDL keywords before showing
-// the icon.
+// the icon, and only activates on domains the user has explicitly allowed
+// (if an allowlist is configured).
 async function handleGenericGraphQLPage() {
   const pathname = window.location.pathname.toLowerCase();
   if (!pathname.endsWith('.graphql') && !pathname.endsWith('.gql')) {
+    hideIcon();
+    return;
+  }
+
+  if (!isExtensionContextValid()) return;
+  const allowed = await isGraphQLDomainAllowed(window.location.hostname);
+  if (!allowed) {
     hideIcon();
     return;
   }

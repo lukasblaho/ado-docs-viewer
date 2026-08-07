@@ -51,6 +51,16 @@ To create a PAT in Azure DevOps:
 - Go to `dev.azure.com` → User Settings → Personal access tokens
 - Create a token with **Code (read)** scope
 
+### 4. (Optional) Restrict which domains can trigger raw GraphQL detection
+
+Since raw `.graphql`/`.gql` file detection works on **any** site (not just
+Azure DevOps), you can restrict it to specific domains via the extension
+popup: enter one hostname per line under **Allowed domains for raw GraphQL
+schema files** (e.g. `api-ppe.wag-test.local`). Subdomains of an allowed
+domain are matched automatically. Leave the list empty to allow detection on
+any site (the default). Azure DevOps is always allowed regardless of this
+list.
+
 ## Usage
 
 1. Browse to any `.md`, `.puml`, `.yaml`/`.yml`, `.json`, `.mmd`/`.mermaid`, or `.graphql`/`.gql` file in Azure DevOps — or a raw `.graphql`/`.gql` schema file served by any site

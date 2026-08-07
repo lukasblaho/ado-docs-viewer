@@ -77,7 +77,15 @@
   </header>
 
   <div class="section">
-    <div class="hint">Shows a floating icon over .md, .puml, .yaml/.yml, .json, and .mmd/.mermaid files. Click it to open a rendered tab.</div>
+    <div class="hint">Shows a floating icon over .md, .puml, .yaml/.yml, .json, .mmd/.mermaid, and .graphql/.gql files. Click it to open a rendered tab.</div>
+  </div>
+
+  <div class="section">
+    <label>Allowed domains for raw GraphQL schema files</label>
+    <div class="hint">One per line. Leave empty to allow any site. Matches hostname or subdomains (e.g. <code>example.com</code> also matches <code>api.example.com</code>). Azure DevOps is always allowed and does not need to be listed.</div>
+    <textarea id="domainsInput" placeholder="api-ppe.wag-test.local&#10;example.com" rows="3" style="width:100%;padding:6px 8px;background:#2d2d2d;border:1px solid #444;border-radius:4px;color:#d4d4d4;font-size:12px;margin-top:6px;font-family:inherit;resize:vertical;"></textarea>
+    <button id="saveDomainsBtn">Save</button>
+    <div id="domainsStatus"></div>
   </div>
 
   <div class="section">
