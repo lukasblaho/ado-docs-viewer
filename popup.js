@@ -32,10 +32,28 @@ saveBtn.addEventListener('click', () => {
 saveDomainsBtn.addEventListener('click', () => {
   const domains = domainsInput.value
     .split('\n')
-    .map((d) => d.trim().toLowerCase())
+    .map(normalizeDomainEntry)
     .filter(Boolean);
   chrome.storage.sync.set({ graphqlAllowedDomains: domains }, () => {
+    domainsInput.value = domains.join('\n'); // reflect normalized form back to the user
     domainsStatus.textContent = '✓ Saved';
     setTimeout(() => { domainsStatus.textContent = ''; }, 2000);
   });
 });
+
+// Accepts either a bare hostname ("example.com") or a full URL
+// ("https://example.com/some/path") and returns just the hostname, so users
+// pasting a full URL (a very likely mistake) don't end up with a stored
+// entry that never matches any page's location.hostname.
+function normalizeDomainEntry(raw) {
+  let value = raw.trim().toLowerCase();
+  if (!value) return '';
+  if (!/^[a-z]+:\/\//.test(value)) {
+    value = `https://${value}`; // give URL() a scheme to parse against
+  }
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return raw.trim().toLowerCase(); // fall back to the raw input if unparsable
+  }
+}

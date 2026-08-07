@@ -319,6 +319,24 @@ async function handleFileViewInner() {
   }
 }
 
+// Normalizes a stored/user-entered domain string down to a bare hostname,
+// tolerating accidental full-URL pastes (e.g. "https://example.com/path")
+// so a mismatched match. This mirrors popup.js's normalizeDomainEntry so
+// old already-saved bad entries (before this normalization existed) still
+// work without requiring the user to re-save.
+function normalizeDomainForMatch(raw) {
+  let value = (raw || '').trim().toLowerCase();
+  if (!value) return '';
+  if (!/^[a-z]+:\/\//.test(value)) {
+    value = `https://${value}`;
+  }
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return (raw || '').trim().toLowerCase();
+  }
+}
+
 // Checks whether `hostname` is allowed to have its raw .graphql/.gql files
 // detected, based on the user-configured domain allowlist (chrome.storage.sync
 // key `graphqlAllowedDomains`, one hostname per line). Matches exact hostname
@@ -330,8 +348,8 @@ async function isGraphQLDomainAllowed(hostname) {
   if (!graphqlAllowedDomains.length) return true; // no allowlist configured -> allow all
   const host = hostname.toLowerCase();
   return graphqlAllowedDomains.some((domain) => {
-    const d = domain.toLowerCase();
-    return host === d || host.endsWith(`.${d}`);
+    const d = normalizeDomainForMatch(domain);
+    return d && (host === d || host.endsWith(`.${d}`));
   });
 }
 

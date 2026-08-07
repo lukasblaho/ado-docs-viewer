@@ -44,9 +44,19 @@
       } catch {
         host = '';
       }
+      const normalizeDomain = (raw) => {
+        let value = (raw || '').trim().toLowerCase();
+        if (!value) return '';
+        if (!/^[a-z]+:\/\//.test(value)) value = `https://${value}`;
+        try {
+          return new URL(value).hostname;
+        } catch {
+          return (raw || '').trim().toLowerCase();
+        }
+      };
       const allowed = graphqlAllowedDomains.some((domain) => {
-        const d = domain.toLowerCase();
-        return host === d || host.endsWith(`.${d}`);
+        const d = normalizeDomain(domain);
+        return d && (host === d || host.endsWith(`.${d}`));
       });
       if (!allowed) {
         statusEl.className = 'error';
