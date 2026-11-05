@@ -84,14 +84,21 @@
     /* PR comments */
     .md-block { position: relative; }
     .md-add-comment {
-      position: absolute; left: -30px; top: 4px; width: 22px; height: 22px;
+      position: absolute; left: -48px; top: 4px; width: 22px; height: 22px;
       border: none; border-radius: 4px; background: #0078d4; color: #fff;
-      font-size: 16px; line-height: 20px; cursor: pointer; padding: 0;
+      font-size: 13px; line-height: 22px; cursor: pointer; padding: 0;
       opacity: 0; transition: opacity .1s;
     }
     .md-block:hover > .md-add-comment { opacity: 1; }
-    .md-block.has-comments > .md-body { background: #fff8c5; box-shadow: -4px 0 0 #d4a72c; border-radius: 2px; }
-    .md-badge { position: absolute; right: 0; top: -2px; border: 1px solid #d4a72c; background: #fff8c5; border-radius: 10px; font-size: 11px; padding: 0 7px; cursor: pointer; }
+    .md-block.has-active > .md-body, .md-block.all-resolved > .md-body { border-left: 4px solid; padding-left: 14px; margin-left: -18px; }
+    .md-block.has-active > .md-body { border-color: #0078d4; }
+    .md-block.all-resolved > .md-body { border-color: #2da44e; }
+    ::highlight(md-anchored) { background: #cfe8ff; }
+    ::highlight(md-resolved) { background: #d2f4d9; }
+    .md-sel-btn { position: fixed; z-index: 150; border: none; border-radius: 6px; background: #0078d4; color: #fff; font-size: 12px; padding: 4px 10px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+    .md-quote { border-left: 3px solid #8c959f; padding: 2px 8px; margin: 0 0 6px; color: #57606a; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+    .md-badge { position: absolute; right: -56px; top: 2px; border: 1px solid #0078d4; background: #ddf0ff; color: #0550ae; border-radius: 10px; font-size: 11px; padding: 0 7px; cursor: pointer; }
+    .md-badge.resolved { border-color: #2da44e; background: #dafbe1; color: #1a7f37; }
     .md-threads[hidden] { display: none; }
     .md-threads { margin: 8px 0 12px; }
     .md-thread { border: 1px solid #d0d7de; border-left: 4px solid #0078d4; border-radius: 6px; padding: 8px 12px; margin: 8px 0; background: #f6f8fa; font-size: 13px; }
@@ -105,6 +112,18 @@
     .md-composer textarea { width: 100%; font: inherit; font-size: 13px; padding: 8px; border: 1px solid #d0d7de; border-radius: 6px; resize: vertical; }
     .md-composer-row { display: flex; gap: 8px; margin-top: 6px; }
     .md-btn { font: inherit; font-size: 12px; padding: 3px 10px; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; cursor: pointer; }
+    .md-actions { display: inline-flex; gap: 6px; align-items: center; }
+    .md-del-wrap { display: inline-flex; }
+    .md-del { color: #cf222e; border-color: #f1b8bd; transition: background .15s, color .15s; }
+    .md-del:hover { background: #cf222e; border-color: #cf222e; color: #fff; }
+    .md-del-confirm { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 10px; border: 1px solid #f1b8bd; border-radius: 14px; background: #ffebe9; color: #a40e26; font-size: 12px; animation: md-pop .18s ease-out; }
+    .md-del-confirm[hidden], .md-del[hidden] { display: none; }
+    .md-yes { background: #cf222e; border-color: #cf222e; color: #fff; border-radius: 12px; }
+    .md-yes:hover { background: #a40e26; }
+    .md-no { border-radius: 12px; }
+    @keyframes md-pop { from { opacity: 0; transform: translateX(8px) scale(.95); } to { opacity: 1; transform: none; } }
+    .md-thread { transition: opacity .2s, transform .2s; }
+    .md-thread.removing { opacity: 0; transform: translateX(-12px); }
     .md-btn.primary { background: #0078d4; border-color: #0078d4; color: #fff; }
     .md-btn:disabled { opacity: .5; cursor: default; }
     .md-toast { position: fixed; bottom: 16px; right: 16px; max-width: 420px; background: #f8d7da; color: #721c24; padding: 10px 14px; border-radius: 6px; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.2); z-index: 200; }

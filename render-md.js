@@ -42,7 +42,7 @@
   renderPlantUMLBlocks(contentEl);
 
   // Commenting is only possible on PR views
-  if (prId) initComments({ org, project, repo, prId, filePath, pat, contentEl });
+  if (prId) initComments({ org, project, repo, prId, filePath, pat, contentEl, markdown });
 })();
 
 // Renders markdown block by block, wrapping each top-level block with its
@@ -65,6 +65,7 @@ function renderBlocks(container, markdown) {
     div.className = 'md-block';
     div.dataset.lineStart = startLine;
     div.dataset.lineEnd = endLine;
+    div.dataset.raw = trimmed;
     const body = document.createElement('div');
     body.className = 'md-body';
     body.innerHTML = html;
@@ -74,11 +75,165 @@ function renderBlocks(container, markdown) {
   container.replaceChildren(frag);
 }
 
+
+// ---- text <-> source mapping helpers -------------------------------------
+
+// Collapses whitespace (and optionally drops inline markdown emphasis chars),
+// returning the normalised string and, per output char, its index in `str`.
+function normMap(str, dropMd) {
+  let s = '', map = [], lastSpace = false;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (dropMd && '*_`~'.includes(ch)) continue;
+    if (/\s/.test(ch)) {
+      if (!lastSpace && s.length) { s += ' '; map.push(i); }
+      lastSpace = true;
+      continue;
+    }
+    lastSpace = false; s += ch; map.push(i);
+  }
+  return { s, map };
+}
+
+// Finds rendered selection text inside a block's raw markdown; returns
+// { start, end } raw indices (end exclusive) or null.
+function findInRaw(raw, selText) {
+  const sel = normMap(selText, false).s.trim();
+  if (!sel) return null;
+  const { s, map } = normMap(raw, true);
+  let a = s.indexOf(sel), b;
+  if (a >= 0) {
+    b = a + sel.length - 1;
+  } else {
+    // Selection spans markup (e.g. a link URL): anchor on its head and tail
+    const n = Math.min(20, sel.length);
+    a = s.indexOf(sel.slice(0, n));
+    if (a < 0) return null;
+    const tb = s.indexOf(sel.slice(-n), a);
+    if (tb < 0) return null;
+    b = tb + n - 1;
+  }
+  return { start: map[a], end: map[b] + 1 };
+}
+
+function rawPos(raw, idx) {
+  const before = raw.slice(0, idx);
+  return { line: before.split('\n').length - 1, col: idx - (before.lastIndexOf('\n') + 1) };
+}
+
 // ---- PR comments --------------------------------------------------------
 
 function initComments(ctx) {
   const { contentEl } = ctx;
   const blocks = [...contentEl.querySelectorAll('.md-block')];
+  const srcLines = ctx.markdown.replace(/\r\n?/g, '\n').split('\n');
+  const hasHl = window.CSS && CSS.highlights && typeof Highlight !== 'undefined';
+  const anchored = hasHl ? new Highlight() : null;          // active threads (blue)
+  const anchoredResolved = hasHl ? new Highlight() : null;  // resolved threads (green)
+  if (hasHl) { CSS.highlights.set('md-anchored', anchored); CSS.highlights.set('md-resolved', anchoredResolved); }
+
+  // Highlights `text` (rendered, or raw markdown when fromRaw) inside a block
+  function highlightText(block, text, fromRaw) {
+    if (!anchored || !text) return null;
+    const body = block.querySelector('.md-body');
+    const nodes = [];
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    let concat = '';
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) { nodes.push({ n, off: concat.length }); concat += n.nodeValue; }
+    const hay = normMap(concat, false);
+    const needle = normMap(text, !!fromRaw).s.trim();
+    if (!needle) return null;
+    const a = hay.s.indexOf(needle);
+    if (a < 0) return null;
+    const locate = i => {
+      const c = hay.map[i];
+      let cur = nodes[0];
+      for (const x of nodes) { if (x.off <= c) cur = x; else break; }
+      return { node: cur.n, offset: c - cur.off };
+    };
+    const s0 = locate(a), e0 = locate(a + needle.length - 1);
+    const r = new Range();
+    r.setStart(s0.node, s0.offset);
+    r.setEnd(e0.node, e0.offset + 1);
+    return r;
+  }
+
+  // Text of the source the thread is anchored to, when it is a partial-line range
+  function quoteFor(t) {
+    if (!t.startOffset || !t.endOffset) return null;
+    const ls = srcLines[t.lineStart - 1], le = srcLines[t.lineEnd - 1];
+    if (ls === undefined || le === undefined) return null;
+    const so = t.startOffset - 1, eo = t.endOffset - 1;
+    if (t.lineStart === t.lineEnd) {
+      if (so <= 0 && eo >= ls.length) return null;
+      return ls.slice(so, eo).trim() || null;
+    }
+    if (so <= 0 && eo >= le.length) return null;
+    return [ls.slice(so), ...srcLines.slice(t.lineStart, t.lineEnd - 1), le.slice(0, eo)].join('\n').trim() || null;
+  }
+
+  function wholeBlockInfo(first, last) {
+    const lineEnd = Number(last.dataset.lineEnd);
+    return {
+      block: first, lineStart: Number(first.dataset.lineStart), lineEnd,
+      startOffset: 1, endOffset: (srcLines[lineEnd - 1] || '').length + 1,
+    };
+  }
+
+  // Maps the user's text selection to a source line/column range
+  function infoFromSelection(sel) {
+    if (!sel.rangeCount || sel.isCollapsed) return null;
+    const range = sel.getRangeAt(0);
+    const blockOf = node => {
+      const el = node.nodeType === 1 ? node : node.parentElement;
+      if (!el || el.closest('.md-threads, .md-composer')) return null;
+      return el.closest('.md-block');
+    };
+    const a = blockOf(range.startContainer), b = blockOf(range.endContainer);
+    if (!a || !b || !contentEl.contains(a) || !contentEl.contains(b)) return null;
+    const text = sel.toString();
+    if (a === b) {
+      const loc = findInRaw(a.dataset.raw || '', text);
+      if (!loc) return wholeBlockInfo(a, a);
+      const base = Number(a.dataset.lineStart);
+      const p1 = rawPos(a.dataset.raw, loc.start), p2 = rawPos(a.dataset.raw, loc.end);
+      return {
+        block: a, lineStart: base + p1.line, lineEnd: base + p2.line,
+        startOffset: p1.col + 1, endOffset: p2.col + 1, highlight: text.trim(),
+      };
+    }
+    return wholeBlockInfo(a, b);
+  }
+
+  // Floating "Comment" button next to a text selection
+  const selBtn = document.createElement('button');
+  selBtn.className = 'md-sel-btn';
+  selBtn.textContent = '💬 Comment';
+  selBtn.style.display = 'none';
+  document.body.appendChild(selBtn);
+  let pendingInfo = null;
+  const hideSelBtn = () => { selBtn.style.display = 'none'; pendingInfo = null; };
+  selBtn.addEventListener('mousedown', e => e.preventDefault()); // keep the selection
+  selBtn.addEventListener('click', () => {
+    const info = pendingInfo;
+    hideSelBtn();
+    if (info) { window.getSelection().removeAllRanges(); openComposer(info); }
+  });
+  document.addEventListener('mouseup', e => {
+    if (e.target === selBtn) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      const info = infoFromSelection(sel);
+      if (!info) { hideSelBtn(); return; }
+      pendingInfo = info;
+      const rect = sel.getRangeAt(0).getBoundingClientRect();
+      selBtn.style.left = `${Math.max(8, rect.left)}px`;
+      selBtn.style.top = `${Math.max(8, rect.top - 32)}px`;
+      selBtn.style.display = '';
+    }, 0);
+  });
+  document.addEventListener('selectionchange', () => { if (window.getSelection().isCollapsed) hideSelBtn(); });
+  window.addEventListener('scroll', hideSelBtn, true);
 
   const toast = msg => {
     const t = document.createElement('div');
@@ -93,8 +248,8 @@ function initComments(ctx) {
     const btn = document.createElement('button');
     btn.className = 'md-add-comment';
     btn.title = `Comment on lines ${block.dataset.lineStart}–${block.dataset.lineEnd}`;
-    btn.textContent = '+';
-    btn.addEventListener('click', () => openComposer(block));
+    btn.textContent = '💬';
+    btn.addEventListener('click', () => openComposer(wholeBlockInfo(block, block)));
     block.appendChild(btn);
   }
 
@@ -103,6 +258,7 @@ function initComments(ctx) {
     if (!host) {
       host = document.createElement('div');
       host.className = 'md-threads';
+      host.hidden = true; // collapsed until the badge is clicked
       block.appendChild(host);
     }
     return host;
@@ -119,6 +275,10 @@ function initComments(ctx) {
       badge.addEventListener('click', () => { host.hidden = !host.hidden; });
       block.appendChild(badge);
     }
+    const active = [...host.querySelectorAll('.md-thread')].filter(c => !c.classList.contains('resolved')).length;
+    block.classList.toggle('has-active', active > 0);
+    block.classList.toggle('all-resolved', n > 0 && active === 0);
+    badge.classList.toggle('resolved', active === 0);
     badge.textContent = `💬 ${n}`;
     badge.title = `${n} comment thread${n === 1 ? '' : 's'} — click to show/hide`;
   }
@@ -134,6 +294,9 @@ function initComments(ctx) {
   function formatDate(d) {
     try { return new Date(d).toLocaleString(); } catch { return ''; }
   }
+
+  let ownId = null; // resolved lazily; null => offer delete on every comment (server enforces)
+  getCurrentUserId(ctx.org, ctx.pat).then(id => { ownId = id; });
 
   function commentEl(c) {
     const el = document.createElement('div');
@@ -180,6 +343,55 @@ function initComments(ctx) {
     return form;
   }
 
+  // Two-step delete: 🗑 -> "Delete? Yes / No"
+  function deleteControl(thread, block) {
+    const wrap = document.createElement('span');
+    wrap.className = 'md-del-wrap';
+    const trash = document.createElement('button');
+    trash.className = 'md-btn md-del';
+    trash.textContent = '🗑 Delete';
+    const confirmBox = document.createElement('span');
+    confirmBox.className = 'md-del-confirm';
+    confirmBox.hidden = true;
+    const q = document.createElement('span');
+    q.textContent = 'Delete thread?';
+    const yes = document.createElement('button');
+    yes.className = 'md-btn md-yes';
+    yes.textContent = 'Yes';
+    const no = document.createElement('button');
+    no.className = 'md-btn md-no';
+    no.textContent = 'No';
+    confirmBox.append(q, yes, no);
+    wrap.append(trash, confirmBox);
+    const ask = on => { trash.hidden = on; confirmBox.hidden = !on; };
+    trash.addEventListener('click', () => ask(true));
+    no.addEventListener('click', () => ask(false));
+    yes.addEventListener('click', async () => {
+      yes.disabled = no.disabled = true;
+      yes.textContent = '…';
+      const failed = [];
+      for (const c of [...thread.comments]) {
+        try {
+          await deleteComment(ctx.org, ctx.project, ctx.repo, ctx.prId, thread.id, c.id, ctx.pat);
+          thread.comments = thread.comments.filter(x => x.id !== c.id);
+        } catch (err) { failed.push(err.message); }
+      }
+      if (failed.length) {
+        toast(`Failed to delete ${failed.length} comment(s): ${failed[0]}`);
+        if (thread.comments.length) { renderThread(thread); return; }
+      }
+      const card = block.querySelector(`[data-thread-id="${thread.id}"]`);
+      if (thread._range && anchored) { anchored.delete(thread._range); anchoredResolved.delete(thread._range); }
+      card?.classList.add('removing');
+      setTimeout(() => {
+        card?.remove();
+        updateBadge(block);
+        if (!block.querySelector('.md-thread')) block.querySelector(':scope > .md-badge')?.remove();
+      }, 200);
+    });
+    return wrap;
+  }
+
   function renderThread(thread) {
     const block = blockForLine(thread.lineStart);
     if (!block) return;
@@ -192,15 +404,14 @@ function initComments(ctx) {
       host.appendChild(card);
     }
     card.replaceChildren();
-    block.classList.add('has-comments');
-    updateBadge(block);
     const resolved = thread.status !== 1 && thread.status !== 5 && thread.status !== undefined;
     card.classList.toggle('resolved', resolved);
 
     const head = document.createElement('div');
     head.className = 'md-thread-head';
     const label = document.createElement('span');
-    label.textContent = `${ThreadStatus[thread.status] || 'Active'} · lines ${thread.lineStart}–${thread.lineEnd}`;
+    label.textContent = `${ThreadStatus[thread.status] || 'Active'} · ` +
+      (thread.lineStart === thread.lineEnd ? `line ${thread.lineStart}` : `lines ${thread.lineStart}–${thread.lineEnd}`);
     const toggle = document.createElement('button');
     toggle.className = 'md-btn';
     toggle.textContent = resolved ? 'Reactivate' : 'Resolve';
@@ -213,8 +424,24 @@ function initComments(ctx) {
         renderThread(thread);
       } catch (err) { toast(`Failed to update thread: ${err.message}`); toggle.disabled = false; }
     });
-    head.append(label, toggle);
+    const actions = document.createElement('span');
+    actions.className = 'md-actions';
+    if (thread.comments.every(c => !ownId || !c.authorId || c.authorId === ownId)) actions.appendChild(deleteControl(thread, block));
+    actions.appendChild(toggle);
+    head.append(label, actions);
     card.appendChild(head);
+    const quote = thread.highlight || quoteFor(thread);
+    if (quote) {
+      const q = document.createElement('div');
+      q.className = 'md-quote';
+      q.textContent = quote;
+      card.appendChild(q);
+      if (thread._range === undefined) thread._range = highlightText(block, quote, !thread.highlight);
+      if (thread._range && anchored) {
+        anchored.delete(thread._range); anchoredResolved.delete(thread._range);
+        (resolved ? anchoredResolved : anchored).add(thread._range);
+      }
+    }
     thread.comments.forEach(c => card.appendChild(commentEl(c)));
 
     const reply = document.createElement('button');
@@ -233,24 +460,36 @@ function initComments(ctx) {
       }));
     });
     card.appendChild(reply);
+    updateBadge(block);
   }
 
-  function openComposer(block) {
-    const host = threadsHost(block);
+  function openComposer(info) {
+    const host = threadsHost(info.block);
     if (host.querySelector('.md-composer.new')) return;
-    const lineStart = Number(block.dataset.lineStart);
-    const lineEnd = Number(block.dataset.lineEnd);
+    host.hidden = false;
+    const { lineStart, lineEnd, startOffset, endOffset } = info;
+    const where = lineStart === lineEnd ? `line ${lineStart}` : `lines ${lineStart}–${lineEnd}`;
     const form = composer({
-      placeholder: `Comment on lines ${lineStart}–${lineEnd}…`, submitLabel: 'Comment',
+      placeholder: `Comment on ${where}…`, submitLabel: 'Comment',
       onSubmit: async text => {
-        const thread = await createFileThread(ctx.org, ctx.project, ctx.repo, ctx.prId, ctx.filePath, lineStart, lineEnd, text, ctx.pat);
-        // The API response may omit line info; fall back to what we posted
+        const thread = await createFileThread(ctx.org, ctx.project, ctx.repo, ctx.prId, ctx.filePath, lineStart, lineEnd, text, ctx.pat, startOffset, endOffset);
+        // The API response may omit position info; fall back to what we posted
         thread.lineStart = thread.lineStart || lineStart;
         thread.lineEnd = thread.lineEnd || lineEnd;
+        thread.startOffset = thread.startOffset || startOffset;
+        thread.endOffset = thread.endOffset || endOffset;
+        thread.highlight = info.highlight;
         renderThread(thread);
       },
     });
     form.classList.add('new');
+    const quote = info.highlight || quoteFor({ lineStart, lineEnd, startOffset, endOffset });
+    if (quote) {
+      const q = document.createElement('div');
+      q.className = 'md-quote';
+      q.textContent = quote;
+      form.prepend(q);
+    }
     host.appendChild(form);
   }
 

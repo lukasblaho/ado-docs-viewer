@@ -25,7 +25,9 @@ async function adoRequest(url, pat, method, body) {
     else if (resp.status === 403) hint = ' — your PAT needs "Code (Read & Write)" scope to comment.';
     throw new Error(`HTTP ${resp.status} ${resp.statusText}${hint}`);
   }
-  return resp.json();
+  if (resp.status === 204) return null;
+  const text = await resp.text();
+  return text ? JSON.parse(text) : null;
 }
 
 // Returns visible threads anchored to `filePath` (right side), as
@@ -38,14 +40,17 @@ async function listFileThreads(org, project, repo, prId, filePath, pat) {
     .map(t => {
       const start = t.threadContext.rightFileStart?.line ?? t.threadContext.leftFileStart?.line;
       const end = t.threadContext.rightFileEnd?.line ?? t.threadContext.leftFileEnd?.line ?? start;
+      const startOffset = t.threadContext.rightFileStart?.offset ?? t.threadContext.leftFileStart?.offset;
+      const endOffset = t.threadContext.rightFileEnd?.offset ?? t.threadContext.leftFileEnd?.offset;
       return {
         id: t.id,
         status: normStatus(t.status),
         lineStart: start || 1, // file-level comments (no line) attach to the top
         lineEnd: end || start || 1,
+        startOffset, endOffset, // 1-based columns; endOffset is exclusive
         comments: (t.comments || [])
           .filter(c => !c.isDeleted && c.commentType !== 'system')
-          .map(c => ({ id: c.id, author: c.author?.displayName || 'Unknown', content: c.content || '', date: c.publishedDate })),
+          .map(c => ({ id: c.id, authorId: c.author?.id, author: c.author?.displayName || 'Unknown', content: c.content || '', date: c.publishedDate })),
       };
     })
     .filter(t => t.comments.length);
@@ -55,19 +60,20 @@ function mapThread(t) {
   return {
     id: t.id, status: normStatus(t.status),
     lineStart: t.threadContext?.rightFileStart?.line, lineEnd: t.threadContext?.rightFileEnd?.line,
-    comments: (t.comments || []).map(c => ({ id: c.id, author: c.author?.displayName || 'You', content: c.content || '', date: c.publishedDate })),
+    startOffset: t.threadContext?.rightFileStart?.offset, endOffset: t.threadContext?.rightFileEnd?.offset,
+    comments: (t.comments || []).map(c => ({ id: c.id, authorId: c.author?.id, author: c.author?.displayName || 'You', content: c.content || '', date: c.publishedDate })),
   };
 }
 
-async function createFileThread(org, project, repo, prId, filePath, lineStart, lineEnd, content, pat) {
+async function createFileThread(org, project, repo, prId, filePath, lineStart, lineEnd, content, pat, startOffset = 1, endOffset = 1) {
   const path = filePath.startsWith('/') ? filePath : '/' + filePath;
   const t = await adoRequest(`${prThreadsBase(org, project, repo, prId)}?api-version=7.1`, pat, 'POST', {
     comments: [{ parentCommentId: 0, content, commentType: 1 }],
     status: 1,
     threadContext: {
       filePath: path,
-      rightFileStart: { line: lineStart, offset: 1 },
-      rightFileEnd: { line: lineEnd, offset: 1 },
+      rightFileStart: { line: lineStart, offset: startOffset },
+      rightFileEnd: { line: lineEnd, offset: endOffset },
     },
   });
   return mapThread(t);
@@ -76,9 +82,21 @@ async function createFileThread(org, project, repo, prId, filePath, lineStart, l
 async function replyToThread(org, project, repo, prId, threadId, content, pat) {
   const c = await adoRequest(`${prThreadsBase(org, project, repo, prId)}/${threadId}/comments?api-version=7.1`, pat, 'POST',
     { parentCommentId: 1, content, commentType: 1 });
-  return { id: c.id, author: c.author?.displayName || 'You', content: c.content || '', date: c.publishedDate };
+  return { id: c.id, authorId: c.author?.id, author: c.author?.displayName || 'You', content: c.content || '', date: c.publishedDate };
 }
 
 async function setThreadStatus(org, project, repo, prId, threadId, status, pat) {
   await adoRequest(`${prThreadsBase(org, project, repo, prId)}/${threadId}?api-version=7.1`, pat, 'PATCH', { status });
+}
+
+async function deleteComment(org, project, repo, prId, threadId, commentId, pat) {
+  await adoRequest(`${prThreadsBase(org, project, repo, prId)}/${threadId}/comments/${commentId}?api-version=7.1`, pat, 'DELETE');
+}
+
+// Best effort: id of the PAT's owner, so delete is only offered on own comments.
+async function getCurrentUserId(org, pat) {
+  try {
+    const d = await adoRequest(`https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData`, pat, 'GET');
+    return d?.authenticatedUser?.id || null;
+  } catch { return null; }
 }
