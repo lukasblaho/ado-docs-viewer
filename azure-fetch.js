@@ -15,6 +15,7 @@ async function fetchAzureFile(params, pat) {
 
   // Resolve source branch: PR takes priority, then explicit branch param
   let versionParam = '';
+  let commitId = null;
   if (prId) {
     const prApiUrl = `${base}/_apis/git/pullrequests/${prId}?api-version=7.1`;
     const prResp = await fetch(prApiUrl, { headers });
@@ -24,7 +25,11 @@ async function fetchAzureFile(params, pat) {
     const prData = await prResp.json();
     // sourceRefName is like "refs/heads/feature/my-branch" → strip prefix
     const refName = prData.sourceRefName?.replace(/^refs\/heads\//, '') ?? '';
-    if (refName) {
+    commitId = prData.lastMergeSourceCommit?.commitId ?? null;
+    if (commitId) {
+      // Pin to the exact commit so rendered line numbers match what comments anchor to
+      versionParam = `&versionDescriptor.version=${commitId}&versionDescriptor.versionType=commit`;
+    } else if (refName) {
       versionParam = `&versionDescriptor.version=${encodeURIComponent(refName)}&versionDescriptor.versionType=branch`;
     }
   } else if (branch) {
@@ -45,5 +50,5 @@ async function fetchAzureFile(params, pat) {
         : '';
     throw new Error(`HTTP ${resp.status} ${resp.statusText}${hint}`);
   }
-  return { text: await resp.text(), apiUrl };
+  return { text: await resp.text(), apiUrl, commitId };
 }
