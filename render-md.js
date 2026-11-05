@@ -493,6 +493,31 @@ function initComments(ctx) {
     return host;
   }
 
+  // Thread rails are zero-height overlays, so cards of neighbouring blocks can
+  // collide. Push each rail down just enough to clear the previous visible one.
+  let layoutQueued = false;
+  function layoutRails() {
+    layoutQueued = false;
+    const hosts = [...contentEl.querySelectorAll('.md-threads')].filter(h => !h.hidden && h.children.length && h.parentElement.offsetParent !== null);
+    for (const h of hosts) h.style.top = '0px';
+    let bottom = -Infinity;
+    for (const h of hosts) {
+      const natural = h.getBoundingClientRect().top + window.scrollY;
+      const shift = Math.max(0, bottom + 10 - natural);
+      if (shift) h.style.top = shift + 'px';
+      bottom = natural + shift + h.scrollHeight;
+    }
+  }
+  function queueLayout() {
+    if (layoutQueued) return;
+    layoutQueued = true;
+    requestAnimationFrame(layoutRails);
+  }
+  new MutationObserver(queueLayout).observe(contentEl, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+  contentEl.addEventListener('input', queueLayout);
+  window.addEventListener('resize', queueLayout);
+  window.addEventListener('load', queueLayout);
+
   // Gutter badge: amber with count while something is open, green check once all resolved.
   // Click toggles the thread rail.
   function updateBadge(block) {
@@ -691,6 +716,20 @@ function initComments(ctx) {
       head.append(grow, actions);
     }
     card.appendChild(head);
+    if (resolved) {
+      // Resolved threads start collapsed to just the header; click it to expand
+      card.classList.toggle('collapsed', !thread._expanded);
+      head.classList.add('clickable');
+      head.title = 'Click to expand/collapse';
+      head.addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        thread._expanded = !thread._expanded;
+        card.classList.toggle('collapsed', !thread._expanded);
+      });
+    } else {
+      thread._expanded = false;
+      card.classList.remove('collapsed');
+    }
 
     const quote = thread.highlight || quoteFor(thread);
     if (quote) {
