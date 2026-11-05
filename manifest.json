@@ -31,7 +31,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["render-md.html", "render-puml.html", "render-openapi.html", "render-mermaid.html", "render-graphql.html", "lib/marked.min.js", "lib/pako.min.js", "lib/js-yaml.min.js", "lib/swagger-ui-bundle.js", "lib/swagger-ui.css", "lib/swagger-ui-theme-flattop.css", "lib/mermaid.min.js", "azure-fetch.js", "azure-comments.js"],
+      "resources": ["render-md.html", "render-puml.html", "render-openapi.html", "render-mermaid.html", "render-graphql.html", "lib/marked.min.js", "lib/pako.min.js", "lib/js-yaml.min.js", "lib/swagger-ui-bundle.js", "lib/swagger-ui.css", "lib/swagger-ui-theme-flattop.css", "lib/mermaid.min.js", "azure-fetch.js", "azure-comments.js", "theme-init.js"],
       "matches": ["<all_urls>"]
     }
   ],

@@ -62,6 +62,7 @@ let tocItems = [];
   document.getElementById('source').textContent = markdown;
   initViewToggle();
   initLineToggle();
+  initThemeToggle();
   initToc(contentEl);
 
   // Commenting is only possible on PR views
@@ -104,6 +105,17 @@ function initViewToggle() {
     document.body.classList.toggle('view-source', b.dataset.view === 'source');
     btns.forEach(x => x.classList.toggle('on', x === b));
   }));
+}
+
+function initThemeToggle() {
+  const btns = document.querySelectorAll('#themeToggle button');
+  const sync = () => btns.forEach(b => b.classList.toggle('on', b.dataset.theme === document.documentElement.dataset.theme));
+  btns.forEach(b => b.addEventListener('click', () => {
+    document.documentElement.dataset.theme = b.dataset.theme;
+    try { localStorage.setItem('mdTheme', b.dataset.theme); } catch {}
+    sync();
+  }));
+  sync();
 }
 
 function initLineToggle() {
@@ -781,7 +793,7 @@ async function renderMermaidBlocks(container) {
   const blocks = container.querySelectorAll('pre > code.language-mermaid');
   if (!blocks.length) return;
 
-  mermaid.initialize({ startOnLoad: false, theme: 'default' });
+  mermaid.initialize({ startOnLoad: false, theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default' });
 
   let idx = 0;
   for (const codeEl of blocks) {
