@@ -17,7 +17,7 @@ On open Pull Requests you can also add, read, reply to and resolve review commen
 - 🔀 Works on regular file views **and** Pull Request file views
 - 🔒 Supports private repositories via a Personal Access Token (PAT)
 - 🔵 Shows a small floating icon over recognized documents — click it to open the rendered view in a new tab (nothing opens automatically)
-- 🎨 The icon's color/glyph reflects the doc type (Markdown, PlantUML, Mermaid, OpenAPI, GraphQL), and for diagrams it shows the detected kind (Sequence, Class, Component, State, ...) when it can be determined from the file content
+- 🎨 The icon is a gradient chip (with the Aparecium badge in its corner) whose color/glyph reflects the doc type (Markdown, PlantUML, Mermaid, OpenAPI, GraphQL), and for diagrams it shows the detected kind (Sequence, Class, Component, State, ...) in the tooltip when it can be determined from the file content
 
 ## Installation
 
@@ -70,7 +70,7 @@ list.
 2. A small floating icon appears in the bottom-right corner of the page, colored/shaped according to the doc type, indicating the file was recognized
 3. Click the icon to open the rendered content in a new tab
 
-For Mermaid and PlantUML files, the extension briefly inspects the file content to detect the specific diagram kind (e.g. Sequence, Class, Component, State) and shows it as a small badge on the icon and in its tooltip.
+For Mermaid and PlantUML files, the extension briefly inspects the file content to detect the specific diagram kind (e.g. Sequence, Class, Component, State) and shows it in the icon's tooltip.
 
 OpenAPI files (`.yaml`, `.yml`, `.json`) are rendered with Swagger UI. If a file cannot be recognised as a valid OpenAPI/Swagger spec a warning is shown but rendering is still attempted.
 
