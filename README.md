@@ -1,4 +1,4 @@
-# Azure DevOps Docs Viewer
+# Aparecium
 
 A Chrome extension that renders **Markdown**, **PlantUML**, **OpenAPI**, and **GraphQL schema** files directly in the browser when viewing them in Azure DevOps (dev.azure.com) — and, for GraphQL schemas, also on raw files served by any site.
 

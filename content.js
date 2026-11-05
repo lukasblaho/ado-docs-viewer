@@ -78,7 +78,7 @@ function ensureIcon() {
   if (iconHost) return;
 
   iconHost = document.createElement('div');
-  iconHost.id = 'ado-docs-viewer-icon-host';
+  iconHost.id = 'aparecium-icon-host';
   iconShadow = iconHost.attachShadow({ mode: 'open' });
 
   const style = document.createElement('style');
