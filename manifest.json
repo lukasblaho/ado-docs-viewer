@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Azure DevOps Docs Viewer",
+  "name": "Aparecium",
   "version": "1.0.0",
-  "description": "Shows an icon over Markdown/PlantUML/GraphQL/diagram files in Azure DevOps and raw web pages, and renders them in a new tab on click.",
+  "description": "Shows an icon over Markdown/PlantUML/GraphQL/diagram files in Azure DevOps and raw web pages, and renders them in a new tab on click. On open Pull Requests, add and manage review comments.",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [

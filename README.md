@@ -1,6 +1,8 @@
-# Azure DevOps Docs Viewer
+# Aparecium
 
 A Chrome extension that renders **Markdown**, **PlantUML**, **OpenAPI**, and **GraphQL schema** files directly in the browser when viewing them in Azure DevOps (dev.azure.com) — and, for GraphQL schemas, also on raw files served by any site.
+
+On open Pull Requests you can also add, read, reply to and resolve review comments right from the rendered Markdown.
 
 ## Features
 
@@ -11,7 +13,7 @@ A Chrome extension that renders **Markdown**, **PlantUML**, **OpenAPI**, and **G
 - 🕸️ Renders `.graphql` / `.gql` GraphQL SDL schema files with [GraphQL Voyager](https://github.com/APIs-guru/graphql-voyager) — an interactive, explorable graph of types and their relationships. Works both in Azure DevOps and on raw schema files served directly by any site (e.g. `https://api.example.com/graphql/schema.graphql`)
 - 🔗 Relative links in Markdown work and the back button navigates history
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
-- 💬 On Pull Request views, hover a block of rendered Markdown and click **+** to comment on the matching source lines. Existing PR threads on the file are shown inline, with reply and resolve (block-level anchoring; needs a PAT with Code read & write)
+- 💬 **Manage comments on open Pull Requests** directly from the rendered view: hover a block of rendered Markdown and click **+** to comment on the matching source lines, and see existing PR threads inline with reply and resolve/reopen (block-level anchoring; needs a PAT with Code read & write)
 - 🔀 Works on regular file views **and** Pull Request file views
 - 🔒 Supports private repositories via a Personal Access Token (PAT)
 - 🔵 Shows a small floating icon over recognized documents — click it to open the rendered view in a new tab (nothing opens automatically)
@@ -40,7 +42,7 @@ git clone https://github.com/lukasblaho/ado-docs-viewer.git
 3. Click **Load unpacked**
 4. Select the `ado-docs-viewer` folder (the one containing `manifest.json`)
 
-The extension icon (blue square) will appear in your toolbar.
+The Aparecium icon (a glowing magic wand) will appear in your toolbar.
 
 ### 3. Configure your PAT (for private repositories)
 
@@ -75,6 +77,16 @@ OpenAPI files (`.yaml`, `.yml`, `.json`) are rendered with Swagger UI. If a file
 Mermaid diagrams in `.mmd`/`.mermaid` files are rendered with zoom controls. Mermaid ` ```mermaid ` fenced code blocks inside `.md` files are also rendered inline.
 
 GraphQL schema files (`.graphql`/`.gql`) are rendered with [GraphQL Voyager](https://github.com/APIs-guru/graphql-voyager), showing an interactive, explorable diagram of all types and how they relate to each other. On non-Azure-DevOps sites, the extension only shows the icon after sniffing the page content for actual SDL keywords (`type`, `schema`, `interface`, `enum`, ...) — a URL merely containing "graphql" is not enough to trigger it.
+
+### Managing PR comments
+
+On an **open** Pull Request file view, the rendered Markdown tab doubles as a review surface:
+
+- **Add a comment** — hover a block (paragraph, list item, heading, code block, ...) and click **+** to start a thread anchored to the matching source lines.
+- **Read threads** — existing PR threads on the file appear as an overlay next to the content they refer to; resolved threads are collapsed by default.
+- **Reply and resolve** — reply to a thread, or mark it resolved / reopen it, without leaving the rendered view.
+
+Comments are posted to Azure DevOps as you (via your PAT), so the token must have the **Code (read & write)** scope.
 
 ### How GraphQL rendering works under the hood
 
