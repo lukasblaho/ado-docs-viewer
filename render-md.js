@@ -61,6 +61,7 @@ let tocItems = [];
   renderPlantUMLBlocks(contentEl);
   document.getElementById('source').textContent = markdown;
   initViewToggle();
+  initLineToggle();
   initToc(contentEl);
 
   // Commenting is only possible on PR views
@@ -103,6 +104,19 @@ function initViewToggle() {
     document.body.classList.toggle('view-source', b.dataset.view === 'source');
     btns.forEach(x => x.classList.toggle('on', x === b));
   }));
+}
+
+function initLineToggle() {
+  const btn = document.getElementById('lineToggle');
+  const set = on => {
+    document.body.classList.toggle('show-lines', on);
+    btn.classList.toggle('on', on);
+    try { localStorage.setItem('mdShowLines', on ? '1' : '0'); } catch {}
+  };
+  let saved = false;
+  try { saved = localStorage.getItem('mdShowLines') === '1'; } catch {}
+  set(saved);
+  btn.addEventListener('click', () => set(!document.body.classList.contains('show-lines')));
 }
 
 // "On this page" sidebar built from the rendered headings
@@ -258,7 +272,10 @@ function renderBlocks(container, markdown) {
     const body = document.createElement('div');
     body.className = 'md-body';
     body.innerHTML = html;
-    div.appendChild(body);
+    const ln = document.createElement('div');
+    ln.className = 'md-ln';
+    ln.textContent = startLine;
+    div.append(ln, body);
     frag.appendChild(div);
   }
   container.replaceChildren(frag);

@@ -102,6 +102,20 @@
     ::highlight(md-anchored) { background: var(--amber-soft); text-decoration: underline 2px var(--amber); }
     ::highlight(md-resolved) { background: var(--green-soft); }
 
+    /* ---- source line numbers ---- */
+    .ln-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 0; border-radius: 999px; background: none; color: var(--ink2); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+    .ln-toggle:hover { background: var(--hover); }
+    .ln-toggle.on { background: var(--accent-soft); color: var(--accent); }
+    .ln-toggle .ic { font-size: 13px; }
+    .md-ln { display: none; grid-column: 1; grid-row: 1; padding: 14px 10px 0 0; text-align: right; font: 11.5px/1.7 var(--mono); color: var(--ink3); user-select: none; }
+    .md-block.has-threads:not(.all-resolved) > .md-ln { color: var(--accent); font-weight: 700; }
+    .md-block:has(> .md-body > h1, > .md-body > h2) > .md-ln { padding-top: 22px; }
+    body.show-lines .md-ln { display: block; }
+    body.show-lines .md-block { grid-template-columns: 36px 44px minmax(0, 680px) 340px; }
+    body.show-lines .md-gutter { grid-column: 2; }
+    body.show-lines .md-body { grid-column: 3; }
+    body.show-lines .md-threads { grid-column: 4; }
+
     /* ---- selection toolbar ---- */
     .md-sel-bar { position: fixed; z-index: 150; display: flex; gap: 2px; padding: 4px; border-radius: 12px; background: #17171C; box-shadow: 0 10px 28px #17171C55; }
     .md-sel-bar button { display: inline-flex; align-items: center; gap: 7px; border: 0; border-radius: 9px; padding: 7px 12px; background: none; color: #D9D9E3; font-size: 13px; font-weight: 500; cursor: pointer; }
@@ -164,6 +178,10 @@
       .md-threads { position: absolute; top: 100%; left: 56px; right: 24px; height: auto; margin: 6px 0 0; }
       .md-block:has(.md-thread:hover, .md-composer:focus-within) { z-index: 21; }
       .chip + #filepath { display: none; }
+      .md-ln { position: absolute; left: 6px; top: 0; width: 36px; }
+      body.show-lines .md-block { display: block; padding-left: 100px; }
+      body.show-lines .md-gutter { left: 50px; }
+      body.show-lines .md-threads { left: 100px; }
     }
     .mermaid-diagram { margin: 1em 0; overflow-x: auto; }
     .mermaid-diagram svg { max-width: 100%; height: auto; display: block; }
@@ -179,6 +197,7 @@
       <span id="filepath">Loading…</span>
     </div>
     <div class="right">
+      <button id="lineToggle" class="ln-toggle" title="Show source line numbers"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span>Line numbers</span></button>
       <span class="pill open" id="openCount" hidden><i></i><span></span></span>
       <span class="pill done" id="doneCount" hidden><span></span></span>
       <div id="viewToggle"><button class="on" data-view="rendered">Rendered</button><button data-view="source">Source</button></div>
