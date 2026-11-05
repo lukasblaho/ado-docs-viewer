@@ -11,6 +11,7 @@ A Chrome extension that renders **Markdown**, **PlantUML**, **OpenAPI**, and **G
 - 🕸️ Renders `.graphql` / `.gql` GraphQL SDL schema files with [GraphQL Voyager](https://github.com/APIs-guru/graphql-voyager) — an interactive, explorable graph of types and their relationships. Works both in Azure DevOps and on raw schema files served directly by any site (e.g. `https://api.example.com/graphql/schema.graphql`)
 - 🔗 Relative links in Markdown work and the back button navigates history
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
+- 💬 On Pull Request views, hover a block of rendered Markdown and click **+** to comment on the matching source lines. Existing PR threads on the file are shown inline, with reply and resolve (block-level anchoring; needs a PAT with Code read & write)
 - 🔀 Works on regular file views **and** Pull Request file views
 - 🔒 Supports private repositories via a Personal Access Token (PAT)
 - 🔵 Shows a small floating icon over recognized documents — click it to open the rendered view in a new tab (nothing opens automatically)
@@ -49,7 +50,7 @@ The extension icon (blue square) will appear in your toolbar.
 
 To create a PAT in Azure DevOps:
 - Go to `dev.azure.com` → User Settings → Personal access tokens
-- Create a token with **Code (read)** scope
+- Create a token with **Code (read)** scope (use **Code (read & write)** to post PR comments)
 
 ### 4. (Optional) Restrict which domains can trigger raw GraphQL detection
 
