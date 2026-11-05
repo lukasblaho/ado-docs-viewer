@@ -9,7 +9,7 @@ On open Pull Requests you can also add, read, reply to and resolve review commen
 - 📄 Renders `.md` files with GitHub-style formatting
 - 📊 Renders `.puml` / `.plantuml` diagrams via [plantuml.com](https://plantuml.com)
 - 🧜 Renders `.mmd` / `.mermaid` files and ` ```mermaid ` code blocks in Markdown with [Mermaid](https://mermaid.js.org/) (locally, no external server)
-- 📑 Renders `.yaml` / `.yml` / `.json` OpenAPI (Swagger) specs with [Swagger UI](https://swagger.io/tools/swagger-ui/)
+- 📑 Renders `.yaml` / `.yml` / `.json` OpenAPI (Swagger) specs with [Swagger UI](https://swagger.io/tools/swagger-ui/), re-skinned (light/dark) with a page outline, spec summary and source view
 - 🕸️ Renders `.graphql` / `.gql` GraphQL SDL schema files with [GraphQL Voyager](https://github.com/APIs-guru/graphql-voyager) — an interactive, explorable graph of types and their relationships. Works both in Azure DevOps and on raw schema files served directly by any site (e.g. `https://api.example.com/graphql/schema.graphql`)
 - 🔗 Relative links in Markdown work and the back button navigates history
 - 🔍 Zoom in/out on diagrams (buttons or `Ctrl/Cmd + scroll`)
