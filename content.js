@@ -10,18 +10,28 @@ let lastUrl = null;
 let currentRenderUrl = null;
 let detectToken = 0; // guards against stale async subtype-detection results
 
-// --- Doc "kind" definitions: color + glyph per file type ---
+// --- Doc "kind" definitions: gradient chip + white pictogram per file type ---
+// Mirrors the in-app chips in docs-viewer.pen: a 32px gradient tile with a
+// white pictogram (drawn in an 18.4 viewBox) and the Aparecium badge overlaid
+// on the bottom-right corner. `svg` is the pictogram's inner markup.
 const KIND_STYLES = {
-  markdown: { color: '#0078d4', label: 'Markdown', svg:
-    '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="7" y1="7" x2="17" y2="7"/><line x1="7" y1="11" x2="17" y2="11"/><line x1="7" y1="15" x2="13" y2="15"/>' },
-  openapi: { color: '#2da44e', label: 'OpenAPI', svg:
-    '<path d="M9 3v3M15 3v3M9 21v-3M15 21v-3M6 9h12a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2z"/>' },
-  plantuml: { color: '#8250df', label: 'PlantUML', svg:
-    '<rect x="3" y="3" width="9" height="6"/><rect x="12" y="15" width="9" height="6"/><path d="M7.5 9v3.5h9V15"/>' },
-  mermaid: { color: '#0e9594', label: 'Mermaid', svg:
-    '<circle cx="5" cy="12" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M7 12h3.5M11.5 11l6-4.5M11.5 13l6 4.5"/>' },
-  graphql: { color: '#e10098', label: 'GraphQL', svg:
-    '<circle cx="12" cy="4.5" r="1.8"/><circle cx="20" cy="8.5" r="1.8"/><circle cx="20" cy="16.5" r="1.8"/><circle cx="12" cy="20.5" r="1.8"/><circle cx="4" cy="16.5" r="1.8"/><circle cx="4" cy="8.5" r="1.8"/><path d="M12 6.3v12.4M6 9.7l6-3.4M6 15.3l6 3.4M18 9.7l-6-3.4M18 15.3l-6 3.4M6 9.7v5.6M18 9.7v5.6"/>' },
+  markdown: { gradient: ['#2F6BFF', '#7C4DFF'], label: 'Markdown', svg:
+    '<rect x="0.64" y="3.44" width="17.12" height="11.52" rx="2.2" fill="none" stroke="#fff" stroke-width="1.28"/>' +
+    '<text x="2.8" y="11.9" font-family="Inter,-apple-system,Segoe UI,sans-serif" font-size="7.6" font-weight="800" fill="#fff" stroke="none">M</text>' +
+    '<path d="M12.6 6.6v5.8M10.3 10.2l2.3 2.3 2.3-2.3" fill="none" stroke="#fff" stroke-width="0.9"/>' },
+  openapi: { gradient: ['#22B573', '#0B7F5E'], label: 'OpenAPI', svg:
+    '<g transform="scale(0.7667)"><path fill="none" stroke="#fff" stroke-width="2" d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/></g>' },
+  plantuml: { gradient: ['#FF9F43', '#F0506E'], label: 'PlantUML', svg:
+    '<rect x="1.2" y="0" width="5.6" height="3.6" rx="1" fill="#fff" stroke="none"/><rect x="11.6" y="0" width="5.6" height="3.6" rx="1" fill="#fff" stroke="none"/>' +
+    '<rect x="3.6" y="4" width="0.8" height="14.4" fill="#fff" fill-opacity="0.55" stroke="none"/><rect x="14" y="4" width="0.8" height="14.4" fill="#fff" fill-opacity="0.55" stroke="none"/>' +
+    '<g transform="translate(4 3.2) scale(0.4333)"><path fill="none" stroke="#fff" stroke-width="2" d="M18 8L22 12L18 16M2 12H22"/></g>' +
+    '<g transform="translate(4 8.4) scale(0.4333)"><path fill="none" stroke="#fff" stroke-width="2" d="M6 8L2 12L6 16M2 12H22"/></g>' },
+  mermaid: { gradient: ['#16B8D4', '#2563EB'], label: 'Mermaid', svg:
+    '<g transform="scale(0.4)"><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M23 12v11m-14 11v-11h28v11"/></g>' +
+    '<rect x="5.6" y="0" width="7.2" height="4.8" rx="1.4" fill="#fff" stroke="none"/><rect x="0" y="13.6" width="7.2" height="4.8" rx="1.4" fill="#fff" stroke="none"/><rect x="11.2" y="13.6" width="7.2" height="4.8" rx="1.4" fill="#fff" stroke="none"/>' },
+  graphql: { gradient: ['#F43F9D', '#8B5CF6'], label: 'GraphQL', svg:
+    '<g transform="scale(0.4)"><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" d="M23 3.5l-16.89 9.75 0 19.5 16.89 9.75 16.89-9.75 0-19.5z m0 0l-16.89 29.25 33.78 0z"/></g>' +
+    '<g fill="#fff" stroke="none"><circle cx="9.2" cy="1.4" r="1.36"/><circle cx="2.45" cy="5.3" r="1.36"/><circle cx="2.45" cy="13.1" r="1.36"/><circle cx="9.2" cy="17" r="1.36"/><circle cx="15.95" cy="13.1" r="1.36"/><circle cx="15.95" cy="5.3" r="1.36"/></g>' },
 };
 
 // Mermaid diagram-type keyword → friendly subtype label.
@@ -85,50 +95,40 @@ function ensureIcon() {
   style.textContent = `
     .btn {
       position: fixed;
-      bottom: 16px;
-      right: 16px;
+      bottom: 20px;
+      right: 20px;
       width: 40px;
       height: 40px;
-      border-radius: 50%;
-      background: #0078d4;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border-radius: 10px;
+      display: block;
       box-shadow: 0 2px 8px rgba(0,0,0,0.35);
       cursor: pointer;
-      border: 2px solid #ffffff;
       z-index: 2147483647;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .btn:hover {
       transform: scale(1.08);
       box-shadow: 0 4px 12px rgba(0,0,0,0.45);
     }
-    .btn svg {
-      width: 22px;
-      height: 22px;
+    .btn svg.pic {
+      position: absolute;
+      left: 8.5px;
+      top: 8.5px;
+      width: 23px;
+      height: 23px;
       pointer-events: none;
-      fill: none;
-      stroke: #ffffff;
-      stroke-width: 1.6;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+      overflow: visible;
     }
     .badge {
       position: absolute;
-      bottom: -4px;
-      right: -4px;
-      max-width: 46px;
-      padding: 1px 4px;
-      border-radius: 6px;
-      background: #1e1e1e;
-      color: #fff;
-      font: 600 8px/12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      box-shadow: 0 0 0 1.5px #ffffff;
+      left: 25px;
+      top: 25px;
+      width: 20px;
+      height: 20px;
+      border-radius: 5.6px;
+      background: #fff center / cover no-repeat;
+      box-shadow: 0 0 0 1.5px #fff;
+      pointer-events: none;
     }
   `;
 
@@ -150,28 +150,30 @@ function ensureIcon() {
   document.documentElement.appendChild(iconHost);
 }
 
-// Updates the icon's color, glyph, optional subtype badge, and tooltip.
+// Updates the chip's gradient, pictogram and tooltip. The diagram subtype
+// (if sniffed) is shown in the tooltip only, as the corner is taken by the
+// Aparecium badge.
 function paintIcon(kind, subtypeLabel) {
   ensureIcon();
   const btn = iconShadow.querySelector('.btn');
   const style = KIND_STYLES[kind] || KIND_STYLES.markdown;
 
-  btn.style.background = style.color;
+  btn.style.background = `linear-gradient(135deg, ${style.gradient[0]}, ${style.gradient[1]})`;
   btn.querySelectorAll('svg, .badge').forEach(el => el.remove());
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'pic');
+  svg.setAttribute('viewBox', '0 0 18.4 18.4');
   svg.innerHTML = style.svg;
   btn.appendChild(svg);
 
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  badge.style.backgroundImage = `url("${chrome.runtime.getURL('icons/icon48.png')}")`;
+  btn.appendChild(badge);
+
   let tooltip = `View rendered ${style.label}`;
-  if (subtypeLabel) {
-    const badge = document.createElement('div');
-    badge.className = 'badge';
-    badge.textContent = subtypeLabel;
-    btn.appendChild(badge);
-    tooltip += ` (${subtypeLabel} diagram)`;
-  }
+  if (subtypeLabel) tooltip += ` (${subtypeLabel} diagram)`;
   tooltip += ' — click to open';
   btn.title = tooltip;
 }
